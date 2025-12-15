@@ -11,9 +11,9 @@ class Parser {
 private:
     std::ifstream file;
 
-    void compute_vwap(std::vector<std::string>& symbol_list);
+    const std::vector<Ticker> compute_signal(std::vector<std::string>& symbol_list);
     std::vector<std::string> custom_line_parser(const std::string& line);
-    size_t calculate_idx(const std::string symbol);
+    size_t calculate_idx(const char& c1, const char& c2);
     inline int fast_atoi(const char*& p);
     inline double fast_atof(const char*& p);
 
@@ -23,10 +23,10 @@ public:
 
     Parser(std::string filename) 
         : filename(filename)
-        , file(filename)
+        , file(filename, std::ios::binary | std::ios::ate)
     {}
 
-    void compute(std::vector<std::string>& symbol_list);
+    const std::vector<Ticker> compute(std::vector<std::string>& symbol_list);
     std::vector<std::string> custom_line_parser_inst(const std::string& line);
 };
 

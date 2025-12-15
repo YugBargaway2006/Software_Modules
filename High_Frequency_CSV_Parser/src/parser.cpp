@@ -10,8 +10,8 @@
 /**
  * @brief public instance of the compute_vwap function 
  */
-void Parser::compute(std::vector<std::string>& symbol_list) {
-    return compute_vwap(symbol_list);
+const std::vector<Ticker> Parser::compute(std::vector<std::string>& symbol_list) {
+    return compute_signal(symbol_list);
 }
 
 
@@ -32,12 +32,23 @@ void Parser::compute(std::vector<std::string>& symbol_list) {
  *
  * @complexity Time complexity O(row * col).
  */
-void Parser::compute_vwap(std::vector<std::string>& symbol_list) {
+const std::vector<Ticker> Parser::compute_signal(std::vector<std::string>& symbol_list) {
     auto start = std::chrono::steady_clock::now();
 
     if(!file.is_open()) {
         throw std::runtime_error("File cannot open for reading!");
     }
+
+    std::streamsize size = file.tellg();
+    file.seekg(0, std::ios::beg);
+
+    std::vector<char> buffer(size);
+    if(!file.read(buffer.data(), size)) {
+        throw std::runtime_error("Error loading buffer!");
+    }
+
+    const char* curr = buffer.data();
+    const char* end = buffer.data() + size;
 
     int symbol_size = symbol_list.size();
     std::string line;
@@ -49,38 +60,52 @@ void Parser::compute_vwap(std::vector<std::string>& symbol_list) {
     }
 
     bool header = true;
-    while(std::getline(file, line)) {
-        if(header) {
-            header = false;
-            continue;
-        }
+    while(curr < end && *curr != '\n') {
+        curr++;
+    }
+    curr++;
+    header = false;
 
-        size_t p1 = line.find(','); 
-        size_t p2 = line.find(',', p1 + 1);
-        size_t p3 = line.find(',', p2 + 1);
+    while(curr < end) {
+        while(*curr != ',') curr++;  // Skip timestamp
+        curr++;
 
-        const char* ptr_price = &line[p2 + 1]; 
-        double price = fast_atof(ptr_price); 
+        size_t idx = calculate_idx(*curr, *(curr + 1));
 
-        const char* ptr_size = &line[p3 + 1];
-        int size = fast_atoi(ptr_size);
+        while(*curr != ',') curr++;  // Skip Symbol
+        curr++;
 
-        size_t idx = calculate_idx(line.substr(p1 + 1, p2 - p1 - 1));
-        stocks[idx].add_size(size);
-        stocks[idx].add_cost(price);
+        double price = fast_atof(curr); 
+        curr++;
+
+        int size = fast_atoi(curr);
+
+        stocks[idx].ema_calculate(price);
     }
 
-    for(int i = 0; i < symbol_size; i++) {
-        stocks[i].vwap_calculate();
-    }
-
-    auto end = std::chrono::steady_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    auto time_end = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(time_end - start);
     time_taken = duration.count();
 
+    return stocks;
 }
 
 
+/**
+ * @brief converts strings to integer values
+ *
+ * @param p the starting char pointer of the integer value to parse.
+ *
+ * @pre there shall be a integer value with the starting pointer as the first number of that integer.
+ *
+ * @return parsed integer
+ *
+ * @post the pointer is updated to the end of the integer in the string.
+ *
+ * @invariant string line remains invariant
+ *
+ * @complexity Time complexity O(|length of number|).
+ */
 inline int Parser::fast_atoi(const char*& p) {
     int x = 0;
     while (*p >= '0' && *p <= '9') {
@@ -91,6 +116,21 @@ inline int Parser::fast_atoi(const char*& p) {
 }
 
 
+/**
+ * @brief converts strings to float values
+ *
+ * @param p the starting char pointer of the float value to parse.
+ *
+ * @pre there shall be a float value with the starting pointer as the first number of that float with a decimal and some values preceding.
+ *
+ * @return parsed float value
+ *
+ * @post the pointer is updated to the end of the float in the string.
+ *
+ * @invariant string line remains invariant
+ *
+ * @complexity Time complexity O(|length of number|).
+ */
 inline double Parser::fast_atof(const char*& p) {
     double x = 0.0;
     
@@ -112,12 +152,28 @@ inline double Parser::fast_atof(const char*& p) {
 }
 
 
-size_t Parser::calculate_idx(const std::string symbol) {
-    if(symbol[0] == 'A' && symbol[1] == 'A') return 0;
-    if(symbol[0] == 'A' && symbol[1] == 'M') return 4;
-    if(symbol[0] == 'G') return 1;
-    if(symbol[0] == 'M') return 2;
-    if(symbol[0] == 'T') return 3;
+/**
+ * @brief maps the symbol to the storage in the ticker.
+ *
+ * @param c1 the starting char of the symbol to parse.
+ * @param c2 the second starting char of the symbol to parse.
+ *
+ * @pre there shall be a valid symbol that is already present in the symbol list.
+ *
+ * @return mapped index value.
+ *
+ * @post no change in the pointer of the string data.
+ *
+ * @invariant string line remains invariant
+ *
+ * @complexity Time complexity O(1).
+ */
+size_t Parser::calculate_idx(const char& c1, const char& c2) {
+    if(c1 == 'A' && c2 == 'A') return 0;
+    if(c1 == 'A' && c2 == 'M') return 4;
+    if(c1 == 'G') return 1;
+    if(c1 == 'M') return 2;
+    if(c1 == 'T') return 3;
     else return -1;
 }
 
