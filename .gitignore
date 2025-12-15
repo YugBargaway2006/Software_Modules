@@ -1,3 +1,6 @@
+# build directory
+build/
+
 # Prerequisites
 *.d
 
@@ -39,3 +42,6 @@
 
 # debug information files
 *.dwo
+
+# data files
+*.csv
