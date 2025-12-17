@@ -14,7 +14,7 @@ private:
     std::map<double, std::list<std::shared_ptr<Order>>, std::less<double>> asks;      // Take the lowest ask first
     std::unordered_map<int, std::shared_ptr<Order>> lookup_table;
 
-    void match_buy_sell();
+    void match_bid_ask();
 
 public:
     Order_Book() {}
