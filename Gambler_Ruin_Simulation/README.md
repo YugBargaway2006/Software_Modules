@@ -1,7 +1,3 @@
-1. 12110ms
-2. 2725ms Removed custom_line_parser O(|line|)
-3. 1400ms Removed map for finding symbol index
-4. 1350ms using O3 optimisation
-5. 835ms Added custom int and double converter
-6. 649ms Removed getline and added buffer to load complete data
-7. 711ms for EMA
+1. 300ms for 10000 rows
+2. 4923ms : Changed generator to outside loop. for 500 million coin flips
+3. 723ms : Added a custom XorShift Generator, for 500026940 coin flips, that is 691 million coin flip simulations per second.
