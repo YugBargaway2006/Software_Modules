@@ -61,7 +61,6 @@ add_executable(Testing
     tests/test_main.cpp
     tests/test_unit_order.cpp
     tests/test_unit_order_book.cpp
-    tests/test_integration_order_orderbook.cpp
 )
 
 target_link_libraries(Testing

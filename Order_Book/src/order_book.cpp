@@ -157,13 +157,14 @@ const double Order_Book::getBestAsk() const {
  * @brief public instance to view the complete order book
  */
 void Order_Book::printOrderBook() const {
+    printf("\n\n");
     std::cout << "------------ BIDS TABLE --------------" << std::endl;
     for(const auto&[price, order_list] : bids) {
         for(const auto& order : order_list) {
             std::cout << "ID: " << order->Id() << " Qt: " << order->quantity << " Price: $" << order->price << " Side: Bid" << std::endl;
         }
     }
-    printf("\n\n\n\n");
+    printf("\n\n");
 
     std::cout << "------------ ASKS TABLE --------------" << std::endl;
     for(const auto&[price, order_list] : asks) {
@@ -171,7 +172,7 @@ void Order_Book::printOrderBook() const {
             std::cout << "ID: " << order->Id() << " Qt: " << order->quantity << " Price: $" << order->price << " Side: Ask" << std::endl;
         }
     }
-    printf("\n");
+    printf("\n\n");
 }
 
 
