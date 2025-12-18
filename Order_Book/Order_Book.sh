@@ -98,7 +98,6 @@ run() {
 #
 run_test() {
     log "Running Test Executable"
-    mkdir $SCRIPT_DIR/tests/test_data
     "$BUILD_DIR/$TEST_EXECUTABLE"
 }
 

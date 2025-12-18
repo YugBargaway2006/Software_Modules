@@ -5,6 +5,7 @@
 #include <memory>
 #include <algorithm>
 #include "../include/order_book.h"
+#include "../include/order.h"
 
 
 /**
@@ -118,11 +119,11 @@ bool Order_Book::cancelOrder(const int& id) {
     std::shared_ptr<Order> stock = it->second;
     double price = stock->price;
 
-    if(stock->Side() == Side::bid) {
+    if(stock->find_side() == Side::bid) {
         bids[price].remove(stock);
         if(bids[price].empty()) bids.erase(price);
     }
-    else if(stock->Side() == Side::ask) {
+    else if(stock->find_side() == Side::ask) {
         asks[price].remove(stock);
         if(asks[price].empty()) asks.erase(price);
     } 

@@ -30,7 +30,7 @@ const double Order::buy_some(const int& num) {
 /**
  * @brief public instance to view the side variable 
  */
-const Side& Order::Side(){
+const Side& Order::find_side() const {
     return side;
 }
 
@@ -38,7 +38,7 @@ const Side& Order::Side(){
 /**
  * @brief public instance to view the Id variable 
  */
-const int& Order::Id(){
+const int& Order::Id() const {
     return id;
 }
 

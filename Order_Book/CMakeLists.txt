@@ -34,6 +34,11 @@ target_include_directories(Order_Book
         ${PROJECT_SOURCE_DIR}/include
 )
 
+target_link_libraries(Order_Book
+    PUBLIC
+        Order
+)
+
 
 add_executable(OrderBook
     main.cpp
@@ -56,7 +61,7 @@ add_executable(Testing
     tests/test_main.cpp
     tests/test_unit_order.cpp
     tests/test_unit_order_book.cpp
-    tests/test_integration_order_order_book.cpp
+    tests/test_integration_order_orderbook.cpp
 )
 
 target_link_libraries(Testing

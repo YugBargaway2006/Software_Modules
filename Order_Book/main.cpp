@@ -1,5 +1,6 @@
 #include <iostream>
 #include "../include/order_book.h"
+#include "../include/order.h"
 
 int main() {
     Order_Book book;

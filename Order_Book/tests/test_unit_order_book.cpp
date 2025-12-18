@@ -7,7 +7,7 @@
  * @brief test if Order_book object is initialized correctly.
  */
 TEST(OrderBookUnitTest, NewOrderBookInitialisesCorrectly) {
-    EXPECT_NO_THROW(Order_Book book());
+    EXPECT_NO_THROW(Order_Book book);
 }
 
 
@@ -59,7 +59,7 @@ TEST(OrderBookUnitTest, GetBestAsk) {
     book.addOrder(1, 10, 175.25, Side::ask);
     book.addOrder(1, 10, 150.00, Side::ask);
 
-    EXPECT_DOUBLE_EQ(book.getBestAsk(), 175.25);
+    EXPECT_DOUBLE_EQ(book.getBestAsk(), 100.25);
 }
 
 
