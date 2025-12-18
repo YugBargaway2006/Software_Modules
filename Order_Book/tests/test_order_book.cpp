@@ -16,9 +16,9 @@ TEST(OrderBookUnitTest, NewOrderBookInitialisesCorrectly) {
  */
 TEST(OrderBookUnitTest, ThrowsErrorForNoBid) {
     Order_Book book;
-    book.addOrder(1, 10, 100.25, "ask");
-    book.addOrder(1, 10, 75.25, "ask");
-    book.addOrder(1, 10, 150.00, "ask");
+    book.addOrder(1, 10, 100.25, Side::ask);
+    book.addOrder(1, 10, 75.25, Side::ask);
+    book.addOrder(1, 10, 150.00, Side::ask);
 
     EXPECT_DOUBLE_EQ(book.getBestBid(), -1);
 }
@@ -29,9 +29,9 @@ TEST(OrderBookUnitTest, ThrowsErrorForNoBid) {
  */
 TEST(OrderBookUnitTest, GetBestBid) {
     Order_Book book;
-    book.addOrder(1, 10, 100.25, "bid");
-    book.addOrder(1, 10, 75.25, "bid");
-    book.addOrder(1, 10, 150.00, "bid");
+    book.addOrder(1, 10, 100.25, Side::bid);
+    book.addOrder(1, 10, 75.25, Side::bid);
+    book.addOrder(1, 10, 150.00, Side::bid);
 
     EXPECT_DOUBLE_EQ(book.getBestBid(), 150.00);
 }
@@ -42,9 +42,9 @@ TEST(OrderBookUnitTest, GetBestBid) {
  */
 TEST(OrderBookUnitTest, ThrowsErrorForNoAsk) {
     Order_Book book;
-    book.addOrder(1, 10, 100.25, "bid");
-    book.addOrder(1, 10, 75.25, "bid");
-    book.addOrder(1, 10, 150.00, "bid");
+    book.addOrder(1, 10, 100.25, Side::bid);
+    book.addOrder(1, 10, 75.25, Side::bid);
+    book.addOrder(1, 10, 150.00, Side::bid);
 
     EXPECT_DOUBLE_EQ(book.getBestAsk(), -1);
 }
@@ -55,12 +55,14 @@ TEST(OrderBookUnitTest, ThrowsErrorForNoAsk) {
  */
 TEST(OrderBookUnitTest, GetBestAsk) {
     Order_Book book;
-    book.addOrder(1, 10, 100.25, "ask");
-    book.addOrder(1, 10, 175.25, "ask");
-    book.addOrder(1, 10, 150.00, "ask");
+    book.addOrder(1, 10, 100.25, Side::ask);
+    book.addOrder(1, 10, 175.25, Side::ask);
+    book.addOrder(1, 10, 150.00, Side::ask);
 
     EXPECT_DOUBLE_EQ(book.getBestAsk(), 175.25);
 }
+
+
 
 
 
