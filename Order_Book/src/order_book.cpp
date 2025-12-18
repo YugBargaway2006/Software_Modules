@@ -8,79 +8,108 @@
 
 
 /**
- * @brief calculates price of stocks when there is a requirement of a fraction of total amount.
+ * @brief takes the order, check if a probable trade exist and perform. Store the remaining amount into the lookup table.
  *
- * @param num total number of stocks to buy.
+ * @param id order_id of the trade
+ * @param quantity quantity of the trade
+ * @param price price of the trade
+ * @param side whether the trade is a bid or ask.
  *
- * @pre num both must be a non-negative integer less than quantity.
+ * @pre id must be a unique number and side cannot be anything else than bid / ask. Price and quantity must be a non-negative numeral.
  *
- * @return the price of required stocks and updated the new quantity to the stock.
+ * @return store the remaining order into the lookup table
  *
- * @invariant All the params are const and thus invariant, only quantity changes.
+ * @invariant All the params are const and thus invariant, only quantity changes. Lookup table and storage changes.
  *
- * @complexity Time complexity O(1).
+ * @complexity Time complexity O(quantity).
  */
-void Order_Book::match_bid_ask() {
-    double profit = 0;
+void Order_Book::addOrder(const int& id, const int& quantity, const double& price, const Side& side) {
+    if(quantity < 0) return;
 
-    while(true) {
-        if(bids.empty() || asks.empty()) break;
-        std::shared_ptr<Order> bestbid = bids.begin()->second.front();
-        std::shared_ptr<Order> bestask = asks.begin()->second.front();
+    int qt = quantity;
+    if(side == Side::bid) {
+        while(qt > 0 && !asks.empty()) {
+            auto best_ask = asks.begin();
+            double ask_price = best_ask->first;
+            auto& sellers = best_ask->second;
 
-        if(bestbid->price <= bestask->price) {
-            break;
+            if(price < ask_price) break;
+
+            while(qt > 0 && !sellers.empty()) {
+                auto order = sellers.front();
+                int sell_qt = std::min(qt, order->quantity);
+
+                std::cout << "Trade! " << sell_qt << " @ " << ask_price << "\n";   // Trade
+
+                order->quantity -= sell_qt;
+                qt -= sell_qt;
+
+                if(order->quantity == 0) {
+                    lookup_table.erase(order->Id()); 
+                    sellers.pop_front();
+                }
+            }
+
+            if(asks.begin()->second.empty()) {
+                asks.erase(asks.begin());
+            }
         }
+    }
+    else {
+        while(qt > 0 && !bids.empty()) {
+            auto best_bid = bids.begin();
+            double bid_price = best_bid->first;
+            auto& buyers = best_bid->second;
 
-        int qt = std::min(bestbid->quantity, bestask->quantity);
-        profit += bestbid->buy_some(qt) - bestask->buy_some(qt);   // Here buy_some is just a method showing buy for ask and sell for bid
+            if(price > bid_price) break;
 
-        if(bestask->quantity == 0) cancelOrder(bestask->Id());
-        if(bestbid->quantity == 0) cancelOrder(bestbid->Id());
+            while(qt > 0 && !buyers.empty()) {
+                auto order = buyers.front();
+                int buy_qt = std::min(qt, order->quantity);
+
+                std::cout << "Trade! " << buy_qt << " @ " << bid_price << "\n";   // Trade
+
+                order->quantity -= buy_qt;
+                qt -= buy_qt;
+
+                if(order->quantity == 0) {
+                    lookup_table.erase(order->Id()); 
+                    buyers.pop_front();
+                }
+            }
+
+            if(bids.begin()->second.empty()) {
+                bids.erase(bids.begin());
+            }
+        }
+    }
+
+    if(qt > 0) {
+        std::shared_ptr<Order> newOrder = std::make_shared<Order>(id, qt, price, side);
+        lookup_table[id] = newOrder;
+        
+        if(side == Side::bid) {
+            bids[price].push_back(newOrder);
+        }
+        else if(side == Side::ask) {
+            asks[price].push_back(newOrder);
+        }
     }
 }
 
 
 /**
- * @brief calculates price of stocks when there is a requirement of a fraction of total amount.
+ * @brief removes the order from the storage and lookup table if required.
  *
- * @param num total number of stocks to buy.
+ * @param id order_id of the order.
  *
- * @pre num both must be a non-negative integer less than quantity.
+ * @pre id must be a valid stored order
  *
- * @return the price of required stocks and updated the new quantity to the stock.
+ * @return true if the order is removed successfully else false.
  *
- * @invariant All the params are const and thus invariant, only quantity changes.
+ * @invariant All the params are const and thus invariant, only lookup table and storage changes.
  *
- * @complexity Time complexity O(1).
- */
-void Order_Book::addOrder(const int& id, const int& quantity, const double& price, const std::string& side) {
-    std::shared_ptr<Order> newOrder = std::make_shared<Order>(id, quantity, price, side);
-
-    lookup_table[id] = newOrder;
-    if(side[0]=='b') {
-        bids[price].push_back(newOrder);
-    }
-    else if(side[0]=='a') {
-        asks[price].push_back(newOrder);
-    }
-
-    match_bid_ask();
-}
-
-
-/**
- * @brief calculates price of stocks when there is a requirement of a fraction of total amount.
- *
- * @param num total number of stocks to buy.
- *
- * @pre num both must be a non-negative integer less than quantity.
- *
- * @return the price of required stocks and updated the new quantity to the stock.
- *
- * @invariant All the params are const and thus invariant, only quantity changes.
- *
- * @complexity Time complexity O(1).
+ * @complexity Time complexity O(log(n)).
  */
 bool Order_Book::cancelOrder(const int& id) {
     auto it = lookup_table.find(id);
@@ -89,16 +118,17 @@ bool Order_Book::cancelOrder(const int& id) {
     std::shared_ptr<Order> stock = it->second;
     double price = stock->price;
 
-    if(stock->Side()[0] == 'b') {
+    if(stock->Side() == Side::bid) {
         bids[price].remove(stock);
         if(bids[price].empty()) bids.erase(price);
     }
-    else if(stock->Side()[0] == 'a') {
+    else if(stock->Side() == Side::ask) {
         asks[price].remove(stock);
         if(asks[price].empty()) asks.erase(price);
     } 
 
     lookup_table.erase(it);
+    return true;
 }
 
 

@@ -30,10 +30,8 @@ const double Order::buy_some(const int& num) {
 /**
  * @brief public instance to view the side variable 
  */
-const std::string& Order::Side(){
-    if(side == 'b') return "bid";
-    else if(side == 'a') return "ask";
-    return "";
+const Side& Order::Side(){
+    return side;
 }
 
 

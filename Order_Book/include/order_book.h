@@ -14,12 +14,10 @@ private:
     std::map<double, std::list<std::shared_ptr<Order>>, std::less<double>> asks;      // Take the lowest ask first
     std::unordered_map<int, std::shared_ptr<Order>> lookup_table;
 
-    void match_bid_ask();
-
 public:
     Order_Book() {}
 
-    void addOrder(const int& id, const int& quantity, const double& price, const std::string& side);
+    void addOrder(const int& id, const int& quantity, const double& price, const Side& side);
     bool cancelOrder(const int& id);   // Returns true if successful
 
     const double getBestBid() const;
