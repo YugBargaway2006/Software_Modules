@@ -1,11 +1,12 @@
 #include <string>
-#include <iostream>
 #include <vector>
+#include <iostream>
 #include <stdexcept>
 #include <memory>
 #include <algorithm>
 #include "../include/order_book.h"
 #include "../include/order.h"
+#include "../include/order_pool.h"
 
 
 /**
@@ -40,7 +41,8 @@ void Order_Book::addOrder(const int& id, const int& quantity, const double& pric
                 auto order = sellers.front();
                 int sell_qt = std::min(qt, order->quantity);
 
-                std::cout << "Trade! " << sell_qt << " @ " << ask_price << "\n";   // Trade
+                // std::cout << "Trade! " << sell_qt << " @ " << ask_price << "\n";   // Trade
+                trade_log.push_back(TradeRecord(id, order->Id(), sell_qt, ask_price));
 
                 order->quantity -= sell_qt;
                 qt -= sell_qt;
@@ -48,6 +50,7 @@ void Order_Book::addOrder(const int& id, const int& quantity, const double& pric
                 if(order->quantity == 0) {
                     lookup_table.erase(order->Id()); 
                     sellers.pop_front();
+                    order_pool.release(order);
                 }
             }
 
@@ -68,7 +71,8 @@ void Order_Book::addOrder(const int& id, const int& quantity, const double& pric
                 auto order = buyers.front();
                 int buy_qt = std::min(qt, order->quantity);
 
-                std::cout << "Trade! " << buy_qt << " @ " << bid_price << "\n";   // Trade
+                // std::cout << "Trade! " << buy_qt << " @ " << bid_price << "\n";   // Trade
+                trade_log.push_back(TradeRecord(id, order->Id(), buy_qt, bid_price));
 
                 order->quantity -= buy_qt;
                 qt -= buy_qt;
@@ -76,6 +80,7 @@ void Order_Book::addOrder(const int& id, const int& quantity, const double& pric
                 if(order->quantity == 0) {
                     lookup_table.erase(order->Id()); 
                     buyers.pop_front();
+                    order_pool.release(order);
                 }
             }
 
@@ -86,7 +91,7 @@ void Order_Book::addOrder(const int& id, const int& quantity, const double& pric
     }
 
     if(qt > 0) {
-        std::shared_ptr<Order> newOrder = std::make_shared<Order>(id, qt, price, side);
+        Order* newOrder = order_pool.acquire(id, qt, price, side);
         lookup_table[id] = newOrder;
         
         if(side == Side::bid) {
@@ -116,7 +121,7 @@ bool Order_Book::cancelOrder(const int& id) {
     auto it = lookup_table.find(id);
     if(it == lookup_table.end()) return false;
 
-    std::shared_ptr<Order> stock = it->second;
+    Order* stock = it->second;
     double price = stock->price;
 
     if(stock->find_side() == Side::bid) {
@@ -129,6 +134,7 @@ bool Order_Book::cancelOrder(const int& id) {
     } 
 
     lookup_table.erase(it);
+    order_pool.release(stock);
     return true;
 }
 
@@ -173,6 +179,16 @@ void Order_Book::printOrderBook() const {
         }
     }
     printf("\n\n");
+}
+
+
+/**
+ * @brief public instance to view the complete trade log
+ */
+void Order_Book::flushlog() const {
+    for(auto& trade : trade_log) {
+        trade.print_record();
+    }
 }
 
 
