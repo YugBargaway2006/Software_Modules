@@ -14,12 +14,11 @@ public:
     explicit Order_Pool(size_t size) 
     : size(size)
     {
-        pool.resize(size);
-        free_list.resize(size);
+        pool.reserve(size);
+        free_list.reserve(size);
 
-        for(int i = 0; i < size; i++) {
-            pool.emplace_back();
-            free_list.push_back(&pool.back());
+        for(int i = 0; i < size; i++) {\
+            free_list.push_back(&pool[i]);
         }
     }
 

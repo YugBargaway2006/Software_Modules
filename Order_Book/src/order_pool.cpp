@@ -1,7 +1,9 @@
 #include <vector>
 #include <stdexcept>
 #include <new>
+#include <utility>
 #include "../include/order_pool.h"
+#include "../include/order.h"
 
 
 /**
@@ -48,6 +50,13 @@ void Order_Pool<T>::release(T* obj) {
     obj -> ~T();
     free_list.push_back(obj);
 }
+
+
+template class Order_Pool<Order>;
+
+template Order* Order_Pool<Order>::acquire<int const&, int&, double const&, Side const&>(
+    int const&, int&, double const&, Side const&
+);
 
 
 

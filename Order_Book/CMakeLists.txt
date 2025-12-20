@@ -23,6 +23,30 @@ target_include_directories(Order
 )
 
 #
+# * Order_Pool Library
+#
+add_library(Order_Pool
+    src/order_pool.cpp
+)
+
+target_include_directories(Order_Pool
+    PUBLIC
+        ${PROJECT_SOURCE_DIR}/include
+)
+
+#
+# * Trade_Record Library
+#
+add_library(Trade_Record
+    src/trade_record.cpp
+)
+
+target_include_directories(Trade_Record
+    PUBLIC
+        ${PROJECT_SOURCE_DIR}/include
+)
+
+#
 # * Order_Book Library
 #
 add_library(Order_Book
@@ -37,6 +61,8 @@ target_include_directories(Order_Book
 target_link_libraries(Order_Book
     PUBLIC
         Order
+        Trade_Record
+        Order_Pool
 )
 
 
@@ -48,6 +74,8 @@ target_link_libraries(OrderBook
     PRIVATE
         Order
         Order_Book
+        Trade_Record
+        Order_Pool
 )
 
 
@@ -67,6 +95,8 @@ target_link_libraries(Testing
     PRIVATE
         Order_Book
         Order
+        Trade_Record
+        Order_Pool
         GTest::gtest
         pthread
 )
