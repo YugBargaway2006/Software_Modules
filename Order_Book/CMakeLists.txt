@@ -66,6 +66,27 @@ target_link_libraries(Order_Book
 )
 
 
+#
+# * Market Data Receiver Library
+#
+add_library(Order_Book
+    src/market_data_receiver.cpp
+)
+
+target_include_directories(Market_Data_Receiver
+    PUBLIC
+        ${PROJECT_SOURCE_DIR}/include
+)
+
+target_link_libraries(Market_Data_Receiver
+    PUBLIC
+        Order
+        Order_Book
+        Protocol
+)
+
+
+
 add_executable(OrderBook
     main.cpp
 )
