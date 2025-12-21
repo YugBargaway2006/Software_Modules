@@ -69,7 +69,7 @@ target_link_libraries(Order_Book
 #
 # * Market Data Receiver Library
 #
-add_library(Order_Book
+add_library(Market_Data_Receiver
     src/market_data_receiver.cpp
 )
 
@@ -82,7 +82,6 @@ target_link_libraries(Market_Data_Receiver
     PUBLIC
         Order
         Order_Book
-        Protocol
 )
 
 
@@ -97,6 +96,7 @@ target_link_libraries(OrderBook
         Order_Book
         Trade_Record
         Order_Pool
+        Market_Data_Receiver
 )
 
 
