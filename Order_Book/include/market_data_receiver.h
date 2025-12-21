@@ -2,6 +2,7 @@
 
 #include <string>
 #include <unistd.h>
+#include "../include/order_book.h"
 
 
 class MarketDataReceiver {
@@ -21,6 +22,5 @@ public:
     }
 
     void init();
-
-    
+    void start(Order_Book& book);
 };

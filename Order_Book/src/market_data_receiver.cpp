@@ -6,6 +6,8 @@
 #include <cstring>
 #include "../include/market_data_receiver.h"
 #include "../include/order.h"
+#include "../include/order_book.h"
+#include "../include/protocol.h"
 
 
 /**
@@ -51,5 +53,33 @@ void MarketDataReceiver::init() {
 }
 
 
+/**
+ * @brief starts the receiver to fetch and load data
+ */
+void MarketDataReceiver::start(Order_Book& book) {
+    char buffer[1024];
+
+    while(true) {
+        int bytes_read = recv(sock_fd, buffer, sizeof(buffer), 0);
+        if(bytes_read > 0) {
+            OrderMessage* msg = reinterpret_cast<OrderMessage*>(buffer);
+
+            if(msg->header.msgType == 1) {
+                uint32_t id = ntohl(msg->orderID);
+                uint32_t price_ticks = ntohl(msg->price);
+                uint32_t quantity = ntohl(msg->quantity);
+                char sd = msg->side;
+
+                Side side;
+                if(sd == 'B') side = Side::bid;
+                else side = Side::ask;
+
+                double price_real = price_ticks / 100.0;
+
+                book.addOrder(id, quantity, price_real, side);
+            }
+        }
+    }
+}
 
 
