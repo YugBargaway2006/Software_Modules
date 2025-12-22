@@ -25,17 +25,30 @@ Measured on a standard consumer laptop (Linux/GCC -O3):
 
 ## Build & Run
 
-**Requirements:**
-* GCC/Clang (C++17 support)
-* Make / CMake
+### Requirements
+- GCC or Clang with **C++17** support  
+- `bash`  
+- `cmake`  
+- `make`  
+
+---
+
+### Script-Based Workflow (Recommended)
+
+The project uses the `Order_Book.sh` script to manage the complete lifecycle: cleaning, configuring, building, testing, and running the application.
 
 ```bash
-# 1. Compile the project (Engine + Simulator)
-g++ -O3 main.cpp order_book.cpp -o engine
-g++ -O3 main_sim.cpp -o sim
+# Full pipeline: clean → configure → build → test → run
+./Order_Book.sh
 
-# 2. Run the Market Data Simulator (Sender)
-./sim
+# Configure → build → run
+./Order_Book.sh --build
 
-# 3. Run the Matching Engine (Receiver)
-./engine
+# Clean build artifacts only
+./Order_Book.sh --clean
+
+# Clean → configure → build → run
+./Order_Book.sh --clean_build
+
+# Configure → build → test
+./Order_Book.sh --test

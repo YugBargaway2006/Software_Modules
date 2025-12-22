@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 
 #
-#   *  @file parser.sh
+#   *  @file Order_Book.sh
 #     
 #   *  @brief Configure, build and run units tests. Remove previous leftovers if available before building.
 #   
-#   *  @usage ./run_parser.sh : clean → configure → build → test → run
-#             ./run_parser.sh --build: configure → build → run
-#             ./run_parser.sh --clean: clean
-#             ./run_parser.sh --clean_build: configure → build → run
+#   *  @usage ./Order_Book.sh : clean → configure → build → test → run
+#             ./Order_Book.sh --build: configure → build → run
+#             ./Order_Book.sh --clean: clean
+#             ./Order_Book.sh --clean_build: configure → build → run
+#             ./Order_Book.sh --test: configure → build → test
 #   
 #   *  @requirements bash, cmake, make
 #
