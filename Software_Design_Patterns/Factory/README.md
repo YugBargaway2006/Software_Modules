@@ -3,6 +3,12 @@
 
 ---
 
+**Key principle:**
+
+> Defer object creation to subclasses while keeping client code stable.
+
+---
+
 ## Overview
 
 The **Factory Method Design Pattern** is a creational design pattern that defines an interface for creating objects, while allowing subclasses to decide **which concrete class to instantiate**.
@@ -156,8 +162,4 @@ The Factory Method pattern provides a **clean, extensible, and maintainable** ap
 
 It allows systems to grow without requiring modifications to existing client code.
 
-**Key principle:**
 
-> Defer object creation to subclasses while keeping client code stable.
-
----
