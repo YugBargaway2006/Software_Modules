@@ -19,8 +19,8 @@ int main() {
         return 1;
     }
 
-    // std::cout << "\n--- FLUSHING TRADE BOOK ---\n";
-    // book.flushlog();    
+    std::cout << "\n--- FLUSHING TRADE BOOK ---\n";
+    book.flushlog();    
 
     return 0;
 }

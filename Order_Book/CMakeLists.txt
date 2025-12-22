@@ -86,6 +86,10 @@ target_link_libraries(Market_Data_Receiver
 
 
 
+add_executable(MarketSimulator 
+    main_sim.cpp
+)
+
 add_executable(OrderBook
     main.cpp
 )
