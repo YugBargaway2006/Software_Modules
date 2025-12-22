@@ -52,3 +52,15 @@ The project uses the `Order_Book.sh` script to manage the complete lifecycle: cl
 
 # Configure → build → test
 ./Order_Book.sh --test
+
+```
+
+---
+
+### Additional documentations for system understanding
+
+*See [ARCHITECTURE.md](documentations/ARCHITECTURE.md) for methodology and structure choices.*
+
+*See [PROTOCOLS.md](documentations/PROTOCOLS.md) for UDP data packet protocols and compression.*
+
+*See [TODO.md](documentations/TODO.md) for future improvements.*
