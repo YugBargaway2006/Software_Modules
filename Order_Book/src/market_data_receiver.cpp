@@ -29,7 +29,7 @@ void MarketDataReceiver::init() {
     struct sockaddr_in address;
     memset(&address, 0, sizeof(address));
     address.sin_family = AF_INET;
-    address.sin_addr.s_addr = inet_addr("127.0.0.1");
+    address.sin_addr.s_addr = inet_addr(multicast_ip.c_str());
     address.sin_port = htons(port);
 
     struct ip_mreq mreq;
@@ -60,18 +60,18 @@ void MarketDataReceiver::init() {
 
     std::cout << "Receiver listening on 127.0.0.1:" << port << "\n";
 
-    // if(inet_aton(multicast_ip.c_str(), &mreq.imr_multiaddr) == 0) {
-    //     close(sock_fd);
-    //     throw std::runtime_error("multicast group address cannot setup!");
-    // }
+    if(inet_aton(multicast_ip.c_str(), &mreq.imr_multiaddr) == 0) {
+        close(sock_fd);
+        throw std::runtime_error("multicast group address cannot setup!");
+    }
 
-    // // mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+    mreq.imr_interface.s_addr = htonl(INADDR_ANY);
     // mreq.imr_interface.s_addr = inet_addr("127.0.0.1");   // Changed to force LocalHost
 
-    // if(setsockopt(sock_fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&mreq, sizeof(mreq)) < 0) {
-    //     close(sock_fd);
-    //     throw std::runtime_error("setsockopt IP_ADD_MEMBERSHIP failed!");
-    // }
+    if(setsockopt(sock_fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&mreq, sizeof(mreq)) < 0) {
+        close(sock_fd);
+        throw std::runtime_error("setsockopt IP_ADD_MEMBERSHIP failed!");
+    }
 }
 
 
