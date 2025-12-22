@@ -28,14 +28,16 @@
 void Order_Book::addOrder(const int& id, const int& quantity, const double& price, const Side& side) {
     if(quantity < 0) return;
 
+    int tick = (int)(price * 100);
+
     int qt = quantity;
     if(side == Side::bid) {
-        while(qt > 0 && !asks.empty()) {
-            auto best_ask = asks.begin();
-            double ask_price = best_ask->first;
-            auto& sellers = best_ask->second;
+        while(qt > 0 && min_ask_tick < asks.size()) {
+            auto& sellers = asks[min_ask_tick];
+            // double ask_price = (double)((min_ask_tick*1.0)/100);
+            double ask_price = min_ask_tick;
 
-            if(price < ask_price) break;
+            if(tick < min_ask_tick) break;
 
             while(qt > 0 && !sellers.empty()) {
                 auto order = sellers.front();
@@ -54,18 +56,18 @@ void Order_Book::addOrder(const int& id, const int& quantity, const double& pric
                 }
             }
 
-            if(asks.begin()->second.empty()) {
-                asks.erase(asks.begin());
+            if(asks[min_ask_tick].empty()) {
+                min_ask_tick++;
             }
         }
     }
     else {
-        while(qt > 0 && !bids.empty()) {
-            auto best_bid = bids.begin();
-            double bid_price = best_bid->first;
-            auto& buyers = best_bid->second;
+        while(qt > 0 && max_bid_tick > 0) {
+            auto& buyers = bids[max_bid_tick];
+            // double bid_price = (double)((max_bid_tick*1.0)/100);
+            double bid_price = max_bid_tick;
 
-            if(price > bid_price) break;
+            if(tick > max_bid_tick) break;
 
             while(qt > 0 && !buyers.empty()) {
                 auto order = buyers.front();
@@ -84,8 +86,8 @@ void Order_Book::addOrder(const int& id, const int& quantity, const double& pric
                 }
             }
 
-            if(bids.begin()->second.empty()) {
-                bids.erase(bids.begin());
+            if(bids[max_bid_tick].empty()) {
+                max_bid_tick--;
             }
         }
     }
@@ -95,10 +97,12 @@ void Order_Book::addOrder(const int& id, const int& quantity, const double& pric
         lookup_table[id] = newOrder;
         
         if(side == Side::bid) {
-            bids[price].push_back(newOrder);
+            bids[tick].push_back(newOrder);
+            max_bid_tick = std::max(max_bid_tick, tick);
         }
         else if(side == Side::ask) {
-            asks[price].push_back(newOrder);
+            asks[tick].push_back(newOrder);
+            min_ask_tick = std::min(min_ask_tick,   tick);
         }
     }
 }
@@ -123,14 +127,15 @@ bool Order_Book::cancelOrder(const int& id) {
 
     Order* stock = it->second;
     double price = stock->price;
+    int tick = (int)(price*100);
 
     if(stock->find_side() == Side::bid) {
-        bids[price].remove(stock);
-        if(bids[price].empty()) bids.erase(price);
+        bids[tick].remove(stock);
+        if(tick == max_bid_tick && bids[tick].empty()) max_bid_tick--;
     }
     else if(stock->find_side() == Side::ask) {
-        asks[price].remove(stock);
-        if(asks[price].empty()) asks.erase(price);
+        asks[tick].remove(stock);
+        if(tick == min_ask_tick && asks[tick].empty()) min_ask_tick++;
     } 
 
     lookup_table.erase(it);
@@ -144,8 +149,8 @@ bool Order_Book::cancelOrder(const int& id) {
  */
 const double Order_Book::getBestBid() const {
     if(bids.empty()) return -1;
-    double bestbid = bids.begin()->first;
-    return bestbid;
+    double bestbid = (max_bid_tick*1.0)/100;
+    return max_bid_tick;
 }
 
 
@@ -154,8 +159,8 @@ const double Order_Book::getBestBid() const {
  */
 const double Order_Book::getBestAsk() const {
     if(asks.empty()) return -1;
-    double bestask = asks.begin()->first;
-    return bestask;
+    double bestask = (min_ask_tick*1.0)/100;
+    return min_ask_tick;
 }
 
 
@@ -165,16 +170,16 @@ const double Order_Book::getBestAsk() const {
 void Order_Book::printOrderBook() const {
     printf("\n\n");
     std::cout << "------------ BIDS TABLE --------------" << std::endl;
-    for(const auto&[price, order_list] : bids) {
-        for(const auto& order : order_list) {
+    for(int i = max_bid_tick; i >= 0; i--) {
+        for(const auto& order : bids[i]) {
             std::cout << "ID: " << order->Id() << " Qt: " << order->quantity << " Price: $" << order->price << " Side: Bid" << std::endl;
         }
     }
     printf("\n\n");
 
     std::cout << "------------ ASKS TABLE --------------" << std::endl;
-    for(const auto&[price, order_list] : asks) {
-        for(const auto& order : order_list) {
+    for(int i = min_ask_tick; i < asks.size(); i++) {
+        for(const auto& order : asks[i]) {
             std::cout << "ID: " << order->Id() << " Qt: " << order->quantity << " Price: $" << order->price << " Side: Ask" << std::endl;
         }
     }
