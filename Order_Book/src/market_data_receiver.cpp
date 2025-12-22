@@ -6,6 +6,7 @@
 #include <iostream>
 #include <cstring>
 #include <csignal>
+#include <chrono>
 #include "../include/market_data_receiver.h"
 #include "../include/order.h"
 #include "../include/order_book.h"
@@ -83,6 +84,12 @@ void MarketDataReceiver::start(Order_Book& book) {
 
     std::cout << "Waiting for packets... (Press Ctrl+C to stop and flush logs)\n";
 
+    // Benchmarking Variables
+    long long total_nanoseconds = 0;
+    long long order_count = 0;
+    long long min_latency = 999999;
+    long long max_latency = 0;
+
     while(keep_running) {
         int bytes_read = recv(sock_fd, buffer, sizeof(buffer), 0);
 
@@ -96,7 +103,7 @@ void MarketDataReceiver::start(Order_Book& book) {
         }
         else if(bytes_read > 0) {
             // DEBUG: Print dot for every packet received.
-            std::cout << "." << std::flush;
+            if(order_count % 100 == 0) std::cout << "." << std::flush;
 
             OrderMessage* msg = reinterpret_cast<OrderMessage*>(buffer);
 
@@ -111,11 +118,29 @@ void MarketDataReceiver::start(Order_Book& book) {
                 else side = Side::ask;
 
                 double price_real = price_ticks / 100.0;
-
+                
+                auto start_time = std::chrono::high_resolution_clock::now();
                 book.addOrder(id, quantity, price_real, side);
+                auto end_time = std::chrono::high_resolution_clock::now();
+
+                long long duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count();
+
+                total_nanoseconds += duration;
+                order_count++;
+                if (duration < min_latency) min_latency = duration;
+                if (duration > max_latency) max_latency = duration;
             }
         }
     }
+
+    std::cout << "\n\n--- BENCHMARK RESULTS ---\n";
+    std::cout << "Total Orders: " << order_count << "\n";
+    if (order_count > 0) {
+        std::cout << "Average Latency: " << (total_nanoseconds / order_count) << " ns\n";
+        std::cout << "Min Latency:     " << min_latency << " ns\n";
+        std::cout << "Max Latency:     " << max_latency << " ns\n";
+    }
+    std::cout << "-----------------------------\n";
 
     std::cout << "\nStopping Receiver...\n";
 }
