@@ -18,7 +18,7 @@ int main() {
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = inet_addr("239.0.0.1");    // Multicast Group
+    addr.sin_addr.s_addr = inet_addr("127.0.0.1");    // Multicast Group
     addr.sin_port = htons(8080); // Port
 
     struct in_addr localInterface;
