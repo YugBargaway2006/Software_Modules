@@ -3,11 +3,23 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <stdexcept>
+#include <iostream>
 #include <cstring>
+#include <csignal>
 #include "../include/market_data_receiver.h"
 #include "../include/order.h"
 #include "../include/order_book.h"
 #include "../include/protocol.h"
+
+
+volatile bool keep_running = true;
+
+
+void signal_handler(int signal) {
+    if (signal == SIGINT) {
+        keep_running = false; // Stop the loop
+    }
+}
 
 
 /**
@@ -17,7 +29,7 @@ void MarketDataReceiver::init() {
     struct sockaddr_in address;
     memset(&address, 0, sizeof(address));
     address.sin_family = AF_INET;
-    address.sin_addr.s_addr = htonl(INADDR_ANY);
+    address.sin_addr.s_addr = inet_addr("127.0.0.1");
     address.sin_port = htons(port);
 
     struct ip_mreq mreq;
@@ -26,6 +38,13 @@ void MarketDataReceiver::init() {
     if(sock_fd < 0) {
         close(sock_fd);
         throw std::runtime_error("socket connection failed!");
+    }
+
+    struct timeval tv;
+    tv.tv_sec = 1;  // 1 Second timeout
+    tv.tv_usec = 0;
+    if (setsockopt(sock_fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv) < 0) {
+        throw std::runtime_error("Setting socket timeout failed");
     }
 
     int reuse_order = 1;
@@ -39,29 +58,46 @@ void MarketDataReceiver::init() {
         throw std::runtime_error("bind to port failed!");
     }
 
-    if(inet_aton(multicast_ip.c_str(), &mreq.imr_multiaddr) == 0) {
-        close(sock_fd);
-        throw std::runtime_error("multicast group address cannot setup!");
-    }
+    std::cout << "Receiver listening on 127.0.0.1:" << port << "\n";
 
-    mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+    // if(inet_aton(multicast_ip.c_str(), &mreq.imr_multiaddr) == 0) {
+    //     close(sock_fd);
+    //     throw std::runtime_error("multicast group address cannot setup!");
+    // }
 
-    if(setsockopt(sock_fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&mreq, sizeof(mreq)) < 0) {
-        close(sock_fd);
-        throw std::runtime_error("setsockopt IP_ADD_MEMBERSHIP failed!");
-    }
+    // // mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+    // mreq.imr_interface.s_addr = inet_addr("127.0.0.1");   // Changed to force LocalHost
+
+    // if(setsockopt(sock_fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&mreq, sizeof(mreq)) < 0) {
+    //     close(sock_fd);
+    //     throw std::runtime_error("setsockopt IP_ADD_MEMBERSHIP failed!");
+    // }
 }
 
 
 /**
  * @brief starts the receiver to fetch and load data
  */
-void MarketDataReceiver::start(Order_Book& book) {
+void MarketDataReceiver::start(Order_Book& book) {  
     char buffer[1024];
 
-    while(true) {
+    std::cout << "Waiting for packets... (Press Ctrl+C to stop and flush logs)\n";
+
+    while(keep_running) {
         int bytes_read = recv(sock_fd, buffer, sizeof(buffer), 0);
-        if(bytes_read > 0) {
+
+        if (bytes_read < 0) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {    // Check for interruptions or timeout.
+                continue; 
+            }
+
+            std::perror("recv failed");
+            break; 
+        }
+        else if(bytes_read > 0) {
+            // DEBUG: Print dot for every packet received.
+            std::cout << "." << std::flush;
+
             OrderMessage* msg = reinterpret_cast<OrderMessage*>(buffer);
 
             if(msg->header.msgType == 1) {
@@ -80,6 +116,8 @@ void MarketDataReceiver::start(Order_Book& book) {
             }
         }
     }
+
+    std::cout << "\nStopping Receiver...\n";
 }
 
 

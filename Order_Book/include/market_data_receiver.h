@@ -5,6 +5,12 @@
 #include "../include/order_book.h"
 
 
+
+
+
+void signal_handler(int signal);
+
+
 class MarketDataReceiver {
 private:
     std::string multicast_ip;
