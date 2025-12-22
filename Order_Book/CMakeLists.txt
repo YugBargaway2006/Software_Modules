@@ -114,6 +114,7 @@ add_executable(Testing
     tests/test_main.cpp
     tests/test_unit_order.cpp
     tests/test_unit_order_book.cpp
+    tests/test_unit_market_data_receiver.cpp
 )
 
 target_link_libraries(Testing
@@ -122,6 +123,7 @@ target_link_libraries(Testing
         Order
         Trade_Record
         Order_Pool
+        Market_Data_Receiver
         GTest::gtest
         pthread
 )
