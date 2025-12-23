@@ -127,7 +127,7 @@ bool Order_Book::cancelOrder(const int& id) {
 
     Order* stock = it->second;
     double price = stock->price;
-    int tick = (int)(price*100);
+    int tick = (int)(price*100 + 0.5);
 
     if(stock->find_side() == Side::bid) {
         bids[tick].remove(stock);

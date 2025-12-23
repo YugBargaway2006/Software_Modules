@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 
 #
-#   *  @file parser.sh
+#   *  @file Order_Book.sh
 #     
 #   *  @brief Configure, build and run units tests. Remove previous leftovers if available before building.
 #   
-#   *  @usage ./run_parser.sh : clean → configure → build → test → run
-#             ./run_parser.sh --build: configure → build → run
-#             ./run_parser.sh --clean: clean
-#             ./run_parser.sh --clean_build: configure → build → run
+#   *  @usage ./Order_Book.sh : clean → configure → build → test → run
+#             ./Order_Book.sh --build: configure → build → run
+#             ./Order_Book.sh --clean: clean
+#             ./Order_Book.sh --clean_build: configure → build → run
+#             ./Order_Book.sh --test: configure → build → test
 #   
 #   *  @requirements bash, cmake, make
 #
@@ -20,7 +21,10 @@ readonly SCRIPT_NAME="$(basename "$0")"
 readonly SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 readonly BUILD_DIR="${SCRIPT_DIR}/build"
 readonly APP_EXECUTABLE="OrderBook"
+readonly SIM_EXECUTABLE="MarketSimulator"
 readonly TEST_EXECUTABLE="Testing"
+
+SIM_PID=""
 
 
 #
@@ -47,7 +51,10 @@ error() {
 #
 #
 cleanup() {
-    :
+    if [[ -n "${SIM_PID:-}" ]]; then
+        log "Shutting down Simulator (PID: $SIM_PID)..."
+        kill "$SIM_PID" 2>/dev/null || true
+    fi
 }
 trap cleanup EXIT INT TERM
 
@@ -68,7 +75,7 @@ clean() {
 #
 configure() {
     log "Configuring project"
-    cmake -S "$SCRIPT_DIR" -B "$BUILD_DIR"
+    cmake -S "$SCRIPT_DIR" -B "$BUILD_DIR" -DCMAKE_BUILD_TYPE=Release
 }
 
 
@@ -78,7 +85,7 @@ configure() {
 #
 build() {
     log "Building project"
-    cmake --build "$BUILD_DIR"
+    cmake --build "$BUILD_DIR" --parallel "$(nproc)"
 }
 
 
@@ -87,7 +94,20 @@ build() {
 #
 #
 run() {
-    log "Running App Executable"
+    if [[ ! -f "$BUILD_DIR/$APP_EXECUTABLE" ]] || [[ ! -f "$BUILD_DIR/$SIM_EXECUTABLE" ]]; then
+        error "Executables not found. Did the build succeed?"
+    fi
+
+    # 2. Start Simulator in Background
+    log "Launching Market Simulator..."
+    "$BUILD_DIR/$SIM_EXECUTABLE" > /dev/null &
+    SIM_PID=$!
+    
+    # 3. Wait for socket binding
+    sleep 0.5
+    
+    # 4. Run Engine in Foreground
+    log "Running Trading Engine..."
     "$BUILD_DIR/$APP_EXECUTABLE"
 }
 
@@ -97,8 +117,12 @@ run() {
 #
 #
 run_test() {
-    log "Running Test Executable"
-    "$BUILD_DIR/$TEST_EXECUTABLE"
+    if [[ -f "$BUILD_DIR/$TEST_EXECUTABLE" ]]; then
+        log "Running Test Executable"
+        "$BUILD_DIR/$TEST_EXECUTABLE"
+    else
+        log "No tests found (Testing target missing). Skipping."
+    fi
 }
 
 
@@ -114,6 +138,7 @@ Options:
   --build         Configure, build, and run
   --clean         Clean build directory only
   --clean_build   Clean, configure, build, and run
+  --test          Configure, build, and run Tests only
   --help          Show this help
 EOF
 }
@@ -141,6 +166,11 @@ main() {
             configure
             build
             run
+            ;;
+        --test)
+            configure
+            build
+            run_test
             ;;
         --help|-h)
             usage
