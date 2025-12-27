@@ -21,13 +21,6 @@ int main() {
     addr.sin_addr.s_addr = inet_addr("239.0.0.1");    // Multicast Group
     addr.sin_port = htons(8080); // Port
 
-    // struct in_addr localInterface;
-    // localInterface.s_addr = inet_addr("127.0.0.1"); // FORCE LOCALHOST
-    // if (setsockopt(sock, IPPROTO_IP, IP_MULTICAST_IF, (char *)&localInterface, sizeof(localInterface)) < 0) {
-    //     perror("Setting local interface error");
-    //     exit(1);
-    // }
-
     char loop = 1;
     if(setsockopt(sock, IPPROTO_IP, IP_MULTICAST_LOOP, &loop, sizeof(loop)) < 0) {
         perror("Setting IP_MULTICAST_LOOP error");
