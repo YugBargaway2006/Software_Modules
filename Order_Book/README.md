@@ -18,7 +18,7 @@ Measured on a standard consumer laptop (Linux/GCC -O3):
 | Metric | Latency (Nanoseconds) |
 | :--- | :--- |
 | **Minimum Latency** | **641 ns** |
-| Average Latency | ~4,700 ns (Includes OS Jitter and memory reallocation) |
+| Average Latency | ~2,700 ns (Includes OS Jitter and memory reallocation) |
 | Throughput | ~1.5 Million Orders/sec |
 
 *See [BENCHMARKS.md](documentations/BENCHMARKS.md) for methodology.*
