@@ -37,11 +37,13 @@ services:
             - limited_network
 
     
-    # Temporary Backend for Testing
-    mock-backend:
-      image: nginx:alpine
-      container_name: mock_backend_service
-      networks:
+    # C++ compiled container cluster backend
+    cpp-gateway:
+        build:
+            context: ./gateway
+            dockerfile: dockerfile
+        container_name: cpp_gateway_node_1
+        networks:
             - limited_network
 
 
