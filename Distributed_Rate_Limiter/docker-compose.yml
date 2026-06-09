@@ -26,6 +26,17 @@ services:
             - limited_network
 
     
+    # In-memory cache for high performance
+    redis:
+        image: redis:7.2-alpine
+        container_name: redis_state
+        ports:
+            - "6379:6379"
+        command: redis-server --appendonly yes
+        networks:
+            - limited_network
+
+    
     # Temporary Backend for Testing
     mock-backend:
       image: nginx:alpine
