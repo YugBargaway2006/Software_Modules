@@ -42,10 +42,9 @@ services:
       image: nginx:alpine
       container_name: mock_backend_service
       networks:
-          limited_network
+            - limited_network
 
 
 networks:
     limited_network:
         driver: bridge
-        
