@@ -1,0 +1,40 @@
+services:
+
+    # Ingestion Layer with Layer 7 Load Balancer
+    haproxy:
+        image: haproxy:3.0-alpine
+        container_name: haproxy_lb
+        port:
+            - "8080:8080"   # User Level Access Ports
+            - "1936:1936"   # HAProxy Stats Dashboard
+        volumes:
+            - ./config/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+        networks:
+            - limited_network
+        depeneds_on:
+            - zookeeper
+            - redis
+
+    
+    # Coordination for Distributed Consensus
+    zookeeper:
+        image: zookeeper:3.9
+        container_name: zookeeper_consensus
+        ports:
+            - "2181:2181"
+        networks:
+            - limited_network
+
+    
+    # Temporary Backend for Testing
+    mock-backend:
+      image: nginx:alpine
+      container_name: mock_backend_service
+      networks:
+          limited_network
+
+
+networks:
+    limited_network:
+        driver: bridge
+        
