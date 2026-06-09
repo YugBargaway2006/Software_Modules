@@ -41,7 +41,7 @@ services:
     cpp-gateway:
         build:
             context: ./gateway
-            dockerfile: dockerfile
+            dockerfile: Dockerfile
         container_name: cpp_gateway_node_1
         networks:
             - limited_network
