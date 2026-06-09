@@ -11,7 +11,7 @@ services:
             - ./config/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
         networks:
             - limited_network
-        depeneds_on:
+        depends_on:
             - zookeeper
             - redis
 
