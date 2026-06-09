@@ -4,7 +4,7 @@ services:
     haproxy:
         image: haproxy:3.0-alpine
         container_name: haproxy_lb
-        port:
+        ports:
             - "8080:8080"   # User Level Access Ports
             - "1936:1936"   # HAProxy Stats Dashboard
         volumes:
