@@ -22,7 +22,7 @@ FROM ubuntu:24.04
 
 RUN apt-get update && apt-get install -y \
     libssl3 \
-    libhiredis1.10 \
+    libhiredis-dev \  
     ca-certificates \
     && rm -rf /var/lib/apt/lists/* 
 

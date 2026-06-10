@@ -21,7 +21,7 @@ FetchContent_Declare(
 )
 set(REDIS_PLUS_PLUS_BUILD_STATIC ON CACHE INTERNAL "")
 set(REDIS_PLUS_PLUS_BUILD_TEST OFF CACHE INTERNAL "")
-FetchContent_MakeAvailable(redisapp)
+FetchContent_MakeAvailable(redispp)
 
 
 add_executable(gateway_bin src/main.cpp)
@@ -29,5 +29,6 @@ add_executable(gateway_bin src/main.cpp)
 # Link both library to executable
 target_link_libraries(gateway_bin PRIVATE 
     httplib::httplib
-    sw::redis-plus-plus
+    redis++_static     # Changed from sw::redis-plus-plus to redis++_static
+    ${HIREDIS_LIB}     # Added core redis library to fix linker dependencies
 )

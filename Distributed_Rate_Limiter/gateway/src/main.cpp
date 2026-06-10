@@ -13,7 +13,7 @@ int main(void) {
     try {
         sw::redis::ConnectionOptions opts;
         opts.host = "redis_state";    // Map directly to redis container
-        opts.port = 6379
+        opts.port = 6379;
 
         sw::redis::ConnectionPoolOptions pool_opts;
         pool_opts.size = 10;    // Max active connections in gateway pool
