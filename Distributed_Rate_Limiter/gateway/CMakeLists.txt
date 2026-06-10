@@ -13,5 +13,21 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(httplib)
 
+# fetch redis plus plus client 
+FetchContent_Declare(
+    redispp
+    GIT_REPOSITORY https://github.com/sewenew/redis-plus-plus.git
+    GIT_TAG        1.3.12
+)
+set(REDIS_PLUS_PLUS_BUILD_STATIC ON CACHE INTERNAL "")
+set(REDIS_PLUS_PLUS_BUILD_TEST OFF CACHE INTERNAL "")
+FetchContent_MakeAvailable(redisapp)
+
+
 add_executable(gateway_bin src/main.cpp)
-target_link_libraries(gateway_bin PRIVATE httplib::httplib)
+
+# Link both library to executable
+target_link_libraries(gateway_bin PRIVATE 
+    httplib::httplib
+    sw::redis-plus-plus
+)
