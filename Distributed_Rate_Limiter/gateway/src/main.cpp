@@ -114,9 +114,17 @@ int main(void) {
             );
 
             if (result == 1) {
-                res.status = 200;      // OK
-                res.set_header("X-Backend-Server", "C++ Engine Node");
-                res.set_content("{\"status\":\"Allowed\",\"client_ip\":\"" + client_ip + "\"}", "application/json\n");
+                // Reverse proxy forwarding logic
+                httplib::Client cli("backend-services", 5000);
+
+                if(auto backend_res = cli.Get(req.path)) {
+                    res.status = backend_res->status;
+                    res.set_header("X-Backend-Server", "C++ Gateway Proxy Node");
+                    res.set_content(backend_res->body, backend_res->get_header_value("Content-Type"));
+                } else {
+                    res.status = 502;    // Bad Gateway
+                    res.set_content("{\"error\":\"Bad Gateway\",\"message\":\"Failed to communicate with internal microservices.\"}", "application/json");
+                }
             } else {
                 res.status = 429;      // Too Many Requests
                 res.set_content("{\"error\":\"Too Many Requests\",\"message\":\"Rate limit exceeded. Bucket empty.\"}\n", "application/json");

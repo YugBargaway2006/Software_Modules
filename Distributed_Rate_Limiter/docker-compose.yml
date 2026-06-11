@@ -56,6 +56,16 @@ services:
         networks:
             - limited_network
 
+    
+    # Backend Services
+    backend-services:
+        build:
+            context: ./mock-services
+            dockerfile: Dockerfile
+        container_name: internal_backend_services
+        networks:
+            - limited_network
+
 
 networks:
     limited_network:
