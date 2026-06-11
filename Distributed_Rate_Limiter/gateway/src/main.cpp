@@ -87,6 +87,11 @@ int main(void) {
     // Core Gateway Route
     svr.Get("/(.*)", [redis_client](const httplib::Request& req, httplib::Response& res) {
         std::string client_ip = req.remote_addr;
+        // Extract forwarded IP from the HAProxy packet
+        if(req.has_header("X-Forwarded-For")) {
+            client_ip = req.get_header_value("X-Forwarded-For");
+        }
+
         std::string redis_key = "rate_limit: " + client_ip;
 
         // Rate Limiting Rules
@@ -110,15 +115,16 @@ int main(void) {
 
             if (result == 1) {
                 res.status = 200;      // OK
-                res.set_content("{\"status\":\"Allowed\",\"client_ip\":\"" + client_ip + "\"}", "application/json");
+                res.set_header("X-Backend-Server", "C++ Engine Node");
+                res.set_content("{\"status\":\"Allowed\",\"client_ip\":\"" + client_ip + "\"}", "application/json\n");
             } else {
                 res.status = 429;      // Too Many Requests
-                res.set_content("{\"error\":\"Too Many Requests\",\"message\":\"Rate limit exceeded. Bucket empty.\"}", "application/json");
+                res.set_content("{\"error\":\"Too Many Requests\",\"message\":\"Rate limit exceeded. Bucket empty.\"}\n", "application/json");
             }
         }
         catch (const std::exception& e) {
             res.status = 500;
-            res.set_content("{\"error\":\"Internal Server Error\",\"details\":\"" + std::string(e.what()) + "\"}", "application/json");
+            res.set_content("{\"error\":\"Internal Server Error\",\"details\":\"" + std::string(e.what()) + "\"}", "application/json\n");
         }
 
         // std::cout << "[Gateway Log] Intercepted Request for: " << req.path << std::endl;
