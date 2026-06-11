@@ -12,8 +12,7 @@ services:
         networks:
             - limited_network
         depends_on:
-            - cpp-gateway-1
-            - cpp-gateway-2
+            - cpp-gateway
 
     
     # Coordination for Distributed Consensus
@@ -38,23 +37,15 @@ services:
 
     
     # C++ compiled container cluster backend
-    cpp-gateway-1:
+    cpp-gateway:
         build:
             context: ./gateway
             dockerfile: Dockerfile
-        container_name: cpp_gateway_node_1
         networks:
             - limited_network
-
-    
-    # Parallel Horizontal Scaling container
-    cpp-gateway-2:
-        build:
-            context: ./gateway
-            dockerfile: Dockerfile
-        container_name: cpp_gateway_node_2
-        networks:
-            - limited_network
+        depends_on:
+            - redis
+            - zookeeper
 
     
     # Backend Services
@@ -65,6 +56,20 @@ services:
         container_name: internal_backend_services
         networks:
             - limited_network
+
+    
+    # Autoscalar
+    autoscaler:
+        build:
+            context: .
+            dockerfile: autoscaler/Dockerfile
+        container_name: cluster_autoscaler
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+        networks:
+            - limited_network
+        depends_on:
+            - cpp-gateway
 
 
 networks:

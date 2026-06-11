@@ -69,7 +69,7 @@ RateLimiter::RateLimiter(const std::string& redis_host, std::shared_ptr<ConfigMa
 {
     try {
         sw::redis::ConnectionOptions opts;
-        opts.host = redis_host;
+        opts.host = "redis";
         opts.port = 6379;
         sw::redis::ConnectionPoolOptions pool_opts;
         pool_opts.size = 10;
