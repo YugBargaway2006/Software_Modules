@@ -17,7 +17,7 @@ Timestamps are captured using `std::chrono::high_resolution_clock`.
 | Statistic | Latency (ns) | Notes |
 | :--- | :--- | :--- |
 | **Min** | **641** | **Hot Cache Path.** Represents the true theoretical speed of the logic without OS interrupts. |
-| **Avg** | **4,741** | Affected by OS context switching between the Simulator process and Engine process on the same machine. |
+| **Avg** | **2,741** | Affected by OS context switching between the Simulator process and Engine process on the same machine. |
 | **Max** | **86,376** | Outlier caused by initial page faults or OS scheduling (Context Switch). |
 
 **Conclusion:**
