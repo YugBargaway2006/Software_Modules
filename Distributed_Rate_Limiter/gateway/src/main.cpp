@@ -2,10 +2,69 @@
 #include <memory>
 #include <string>
 #include <chrono>
+#include <atomic>
+
+#define THREADED
+
+#include <zookeeper/zookeeper.h>
+#include <nlohmann/json.hpp>
 #define CPPHTTPLIB_OPENSSL_SUPPORT
 #include "httplib.h"
 #include <sw/redis++/redis++.h>
 
+
+using json = nlohmann::json;
+
+// Global State
+std::atomic<int> rate_capacity{5};
+std::atomic<int> rate_refill{1};
+
+// Zookeeper watcher logic
+void config_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
+
+void fetch_config(zhandle_t *zh) {
+    char buffer[1024];
+    int buffer_len = sizeof(buffer);
+
+    // Read config and leave watcher trigger
+    int rc = zoo_wget(zh, "/rate_limiter/config", config_watcher, nullptr, buffer, &buffer_len, nullptr);
+
+    if(rc == ZOK && buffer_len > 0) {
+        try {
+            auto j = json::parse(std::string(buffer, buffer_len));
+            if(j.contains("capacity")) {
+                rate_capacity.store(j["capacity"]);
+            }
+            if(j.contains("refill_rate")) {
+                rate_refill.store(j["refill_rate"]);
+            }
+
+            std::cout << "[Node Sync] ZK Rules Updated -> Capacity: " << rate_capacity.load() 
+                      << " | Refill: " << rate_refill.load() << "/sec" << std::endl;
+
+        } catch(const std::exception& e) {
+            std::cerr << "ZK JSON Parse Error: " << e.what() << std::endl;
+        }
+    } else if(rc == ZNONODE) {
+        // Leave watcher if no changes
+        zoo_wexists(zh, "/rate_limiter/config", config_watcher, nullptr, nullptr);
+    }
+}
+
+// Trigger auto if some changes config'
+void config_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx) {
+    if(type == ZOO_CHANGED_EVENT || type == ZOO_CREATED_EVENT) {
+        fetch_config(zh);
+    }
+}
+
+// Trigger at the connection start
+void global_watcher(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx) {
+    if (type == ZOO_SESSION_EVENT && state == ZOO_CONNECTED_STATE) {
+        std::cout << "Connected to ZooKeeper Consensus Cluster!" << std::endl;
+        fetch_config(zh);
+    }
+}
 
 // Atomic Token Bucket Script in Lua
 const std::string LUA_TOKEN_BUCKET = R"(
@@ -46,6 +105,12 @@ const std::string LUA_TOKEN_BUCKET = R"(
 
 int main(void) {
     httplib::Server svr;
+
+    // Initialize Zookeeper Background Connection
+    zhandle_t *zk_client = zookeeper_init("zookeeper:2181", global_watcher, 10000, 0, 0, 0);
+    if (!zk_client) {
+        std::cerr << "Failed to initialize Zookeeper client." << std::endl;
+    }
 
     // Initialize Redis Client Connection
     std::shared_ptr<sw::redis::Redis> redis_client;
@@ -94,9 +159,9 @@ int main(void) {
 
         std::string redis_key = "rate_limit: " + client_ip;
 
-        // Rate Limiting Rules
-        std::string capacity = "5";
-        std::string refill_rate = "1";
+        // Rate Limiting Rules Dynamic injection using atomic operations
+        std::string capacity = std::to_string(rate_capacity.load());
+        std::string refill_rate = std::to_string(rate_refill.load());
 
         auto now_seconds = std::to_string(std::chrono::duration_cast<std::chrono::seconds>(
             std::chrono::system_clock::now().time_since_epoch()).count());

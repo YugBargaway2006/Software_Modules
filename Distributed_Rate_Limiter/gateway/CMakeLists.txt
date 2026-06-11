@@ -23,6 +23,14 @@ set(REDIS_PLUS_PLUS_BUILD_STATIC ON CACHE INTERNAL "")
 set(REDIS_PLUS_PLUS_BUILD_TEST OFF CACHE INTERNAL "")
 FetchContent_MakeAvailable(redispp)
 
+# fetch json parser library
+FetchContent_Declare(
+    nlohmann_json
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG        v3.11.3
+)
+FetchContent_MakeAvailable(nlohmann_json)
+
 add_executable(gateway_bin src/main.cpp)
 
 find_library(HIREDIS_LIB hiredis REQUIRED)
@@ -32,6 +40,7 @@ find_library(ZOOKEEPER_LIB zookeeper_mt REQUIRED)
 target_link_libraries(gateway_bin PRIVATE 
     httplib::httplib
     redis++_static     # Changed from sw::redis-plus-plus to redis++_static
+    nlohmann_json::nlohmann_json
     ${HIREDIS_LIB}     # Added core redis library to fix linker dependencies
     ${ZOOKEEPER_LIB}
 )
