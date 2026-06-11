@@ -25,6 +25,23 @@ services:
             - limited_network
 
     
+    # Temporary container to inject configuration on boot for Zookeeper
+    zookeeper-init:
+        image: zookeeper:3.9
+        container_name: zookeeper_bootstrap
+        networks:
+            - limited_network
+        depends_on:
+            - zookeeper
+        command: >
+            bash -c "
+            echo 'Waiting for ZooKeeper to boot...' &&
+            sleep 5 &&
+            zkCli.sh -server zookeeper:2181 create /rate_limiter/config '{\"algorithm\": \"token_bucket\", \"capacity\": 5, \"window_size\": 1}' || true &&
+            echo 'ZooKeeper Configuration Injected!'
+            "
+
+    
     # In-memory cache for high performance
     redis:
         image: redis:7.2-alpine
@@ -41,6 +58,8 @@ services:
         build:
             context: ./gateway
             dockerfile: Dockerfile
+        expose:
+            - "8000"
         networks:
             - limited_network
         depends_on:
@@ -53,7 +72,7 @@ services:
         build:
             context: ./mock-services
             dockerfile: Dockerfile
-        container_name: internal_backend_services
+        # container_name: internal_backend_services
         networks:
             - limited_network
 
