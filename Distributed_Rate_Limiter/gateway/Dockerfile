@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y \
     git \
     libssl-dev \
     libhiredis-dev \
+    libzookeeper-mt-dev \
     && rm -rf /var/lib/apt/lists/* 
 
 WORKDIR /build 
@@ -23,6 +24,7 @@ FROM ubuntu:24.04
 RUN apt-get update && apt-get install -y \
     libssl3 \
     libhiredis-dev \  
+    libzookeeper-mt-dev \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/* 
 
