@@ -1,0 +1,77 @@
+services:
+
+    # Ingestion Layer with Layer 7 Load Balancer
+    haproxy:
+        image: haproxy:3.0-alpine
+        container_name: haproxy_lb
+        ports:
+            - "8080:8080"   # User Level Access Ports
+            - "1936:1936"   # HAProxy Stats Dashboard
+        volumes:
+            - ./config/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+        networks:
+            - limited_network
+        depends_on:
+            - cpp-gateway
+
+    
+    # Coordination for Distributed Consensus
+    zookeeper:
+        image: zookeeper:3.9
+        container_name: zookeeper_consensus
+        ports:
+            - "2181:2181"
+        networks:
+            - limited_network
+
+    
+    # In-memory cache for high performance
+    redis:
+        image: redis:7.2-alpine
+        container_name: redis_state
+        ports:
+            - "6379:6379"
+        command: redis-server --appendonly yes
+        networks:
+            - limited_network
+
+    
+    # C++ compiled container cluster backend
+    cpp-gateway:
+        build:
+            context: ./gateway
+            dockerfile: Dockerfile
+        networks:
+            - limited_network
+        depends_on:
+            - redis
+            - zookeeper
+
+    
+    # Backend Services
+    backend-services:
+        build:
+            context: ./mock-services
+            dockerfile: Dockerfile
+        container_name: internal_backend_services
+        networks:
+            - limited_network
+
+    
+    # Autoscalar
+    autoscaler:
+        build:
+            context: .
+            dockerfile: autoscaler/Dockerfile
+        container_name: cluster_autoscaler
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+        networks:
+            - limited_network
+        depends_on:
+            - cpp-gateway
+
+
+networks:
+    limited_network:
+        driver: bridge
