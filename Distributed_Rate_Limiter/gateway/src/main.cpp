@@ -5,7 +5,7 @@
 #include "GatewayServer.hpp"
 
 int main() {
-    std::cout << "🚀 Booting Distributed API Gateway..." << std::endl;
+    std::cout << "Booting Distributed API Gateway..." << std::endl;
 
     // ZooKeeper System
     auto config = std::make_shared<ConfigManager>("zookeeper:2181");

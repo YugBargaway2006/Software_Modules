@@ -8,8 +8,8 @@ PROJECT_NAME = "distributed_rate_limiter"
 SERVICE_NAME = "cpp-gateway"
 MAX_NODES = 5
 MIN_NODES = 1
-SCALE_UP_CPU = 0.5   
-SCALE_DOWN_CPU = 0.1 
+SCALE_UP_CPU = 80   
+SCALE_DOWN_CPU = 20
 CHECK_INTERVAL = 5    
 
 
