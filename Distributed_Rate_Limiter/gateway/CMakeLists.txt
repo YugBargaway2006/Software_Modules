@@ -31,7 +31,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(nlohmann_json)
 
-add_executable(gateway_bin src/main.cpp)
+include_directories(include)
+
+add_executable(gateway_bin 
+    src/main.cpp 
+    src/ConfigManager.cpp 
+    src/RateLimiter.cpp 
+    src/GatewayServer.cpp
+)
 
 find_library(HIREDIS_LIB hiredis REQUIRED)
 find_library(ZOOKEEPER_LIB zookeeper_mt REQUIRED)

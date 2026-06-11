@@ -15,15 +15,17 @@ WORKDIR /build
 # Docker Cache Improve
 COPY CMakeLists.txt .
 
-RUN mkdir src && echo "int main() { return 0; }" > src/main.cpp
+RUN mkdir src && echo "int main() { return 0; }" > src/main.cpp && \
+    touch src/ConfigManager.cpp src/RateLimiter.cpp src/GatewayServer.cpp
 
 RUN mkdir build && cd build && \
     cmake -DCMAKE_BUILD_TYPE=Release .. && \
     make -j$(nproc)
 
 COPY src/ src/ 
+COPY include/ include/
 
-RUN cd build && touch ../src/main.cpp && make -j$(nproc)
+RUN cd build && touch ../src/*.cpp && make -j$(nproc)
 
 
 # Production Runtime
