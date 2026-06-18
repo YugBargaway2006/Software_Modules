@@ -3,370 +3,241 @@
     Author : Yug Bargaway
 
     PROBLEM: Design a Dynamic Hash Map (unordered_map)
-    Design and implement a generic Key-Value Hash Map from scratch. The map must use a dynamically allocated
-    array of pointers and handle collisions using Separate Chaining (Singly Linked Lists).
+    Design and implement a generic Key-Value Hash Map from scratch. The map must 
+    use a dynamically allocated array of pointers and handle collisions using 
+    Separate Chaining (Singly Linked Lists).
 
     Functional Requirements : 
-    1. There should be a constructor with initial size parameter
-    2. There should be a put method and a get method, with bool as return.
-    3. It should also support removal of keys
-    4. There should be methods to know load factor as well as number of key value pairs stored.
+    1. There should be a constructor to provide the initial bucket capacity.
+    2. Methods for put, get, and remove key-value pairs.
+    3. The map should automatically double in size and rehash when load factor > 0.75.
+    4. Additional interfaces for size and load_factor.
 
-    Non-Functional Requirements :
-    1. Hashmap should be dynamically allotted for efficient memory management.
-    2. The method should be amortized O(1)
-    3. Following C++ idiom of Getter and Setter to properly encapsulate and safeguard inner state of map
-    4. Optionally, we will support the Rule of 5 for the C++ class
+    Non-functional Requirements :
+    1. Dynamically Allotted Array of pointers for efficient memory management.
+    2. put, get, and remove operations should be amortized O(1).
+    3. Support multiple data types for Keys and Values (template programming).
+    4. Follow Rule of 5 semantics (Cons / Dest, Copy, Move).
+    5. Zero memory leaks during rehash or destruction.
 */
 
+
 /*
-    Interface / Declaration : Hashmap.hpp
+    Interface / Declaration : hash_map.hpp
 */
 
 #include <iostream>
 #include <stdexcept>
-#include <utility>
+#include <functional> // For std::hash
+#include <utility>    // For std::swap
 
 template<typename K, typename V>
-class Node {
+class HashMap {
 // Structures
 private:
-    K key;
-    V value;
-    Node* next_node;
+    struct HashNode {
+        K key;
+        V value;
+        HashNode* next;
+        
+        HashNode(const K& k, const V& v) : key(k), value(v), next(nullptr) {}
+    };
 
-// Behaviours
-public:
-    Node(const K& key, const V& value, Node<K, V>* next_node = nullptr);
-    ~Node();
+    HashNode** buckets;
+    size_t max_size;
+    size_t map_size;
+    const double max_load_factor = 0.75;
 
-    Node(const Node& obj);
-    Node& operator=(const Node& obj);
-
-    Node(Node&& obj) noexcept;
-    Node& operator=(Node&& obj) noexcept;
-
-    void update(const V& value, const Node* obj) const;
-    const Node* next() const;
-    const std::pair<K, V> get() const;
-};
-
-
-template<typename K, typename V>
-class Hashmap {
-// Stuctures
+// Behaviours 
 private:
-    size_t size;
-    size_t buckets;
-    Node** container;
-
-// Behaviours
-private:
-    size_t bucket_idx(const K& key);
-    void increase_size();
-    const double load_factor() const;
+    void rehash();
+    void clear();
 
 public:
-    Hashmap(const size_t size);
-    ~Hashmap();
+    HashMap(const size_t sz = 8);
+    ~HashMap();
 
-    Hashmap(const Hashmap& obj);
-    Hashmap& operator=(const Hashmap& obj);
+    HashMap(const HashMap<K, V>& obj);
+    HashMap& operator=(HashMap<K, V> obj);
 
-    Hashmap(Hashmap&& obj) noexcept;
-    Hashmap& operator=(Hashmap&& obj) noexcept;
+    HashMap(HashMap<K, V>&& obj) noexcept;
+    HashMap& operator=(HashMap<K, V>& obj) noexcept;
 
     void put(const K& key, const V& value);
-    bool get(const K& key, V& out_value);
+    bool get(const K& key, V& out_value) const;
     bool remove(const K& key);
-    const size_t size() const;
+
+    size_t size() const;
+    double load_factor() const;
 };
 
 
 /*
-    Implementation : hashmap.cpp
+    Implementation : hash_map.cpp
 */
 
-// Node Constructor
+// Constructor
 template<typename K, typename V>
-Node<K, V>::Node(const K& key, const V& value, Node<K, V>* next_node = nullptr) 
-    : key(key)
-    , value(value)
-    , next_node(next_node)
-{}
-    
-// Node Destructor
-template<typename K, typename V>
-Node<K, V>::~Node() {
-    delete next_node;
-}
-
-// Copy constructor
-template<typename K, typename V>
-Node<K, V>::Node(Node<K, V>&& obj) noexcept
-    : key(std::move(obj.key))
-    , value(std::move(obj.value))
-    , next_node(obj.next_node)
+HashMap<K, V>::HashMap(const size_t sz) 
+    : max_size(sz > 0 ? sz : 8)
+    , map_size(0)
 {
-    obj.next_node = nullptr;
-}
-
-// Copy Assignment
-template<typename K, typename V>
-Node<K, V>& Node<K, V>::operator=(const Node<K, V>& obj) {
-    if(this == &obj) {
-        return *this;
+    buckets = new HashNode*[max_size];
+    for(size_t idx = 0; idx < max_size; idx++) {
+        buckets[idx] = nullptr;
     }
+}
 
-    delete next_node;
-
-    key = obj.key;
-    value = obj.value;
-
-    if(obj.next_node != nullptr) {
-        next_node = new Node<K, V>(*obj.next_node);
-    } else {
-        next_node = nullptr;
+// Helper: Clear all memory
+template<typename K, typename V>
+void HashMap<K, V>::clear() {
+    for(size_t idx = 0; idx < max_size; idx++) {
+        HashNode* current = buckets[idx];
+        while(current != nullptr) {
+            HashNode* temp = current;
+            current = current->next;
+            delete temp;
+        }
     }
-
-    return *this;
+    delete[] buckets;
 }
 
-// Move Constructor
+// Destructor
 template<typename K, typename V>
-Node<K, V>::Node(Node<K, V>&& obj) noexcept
-    : key(std::move(obj.key))
-    , value(std::move(obj.value))
-    , next_node(obj.next_node)
-{
-    obj.next_node = nullptr;
-}
-
-// Move Assignment
-template<typename K, typename V>
-Node<K, V>& Node<K, V>::operator=(Node<K, V>&& obj) noexcept {
-    if(this == &obj) {
-        return *this;
-    }
-
-    delete next_node;
-
-    key = std::move(obj.key);
-    value = std::move(obj.value);
-    next_node = obj.next_node;
-
-    obj.next_node = nullptr;
-
-    return *this;
-}
-
-// Update Value
-template<typename K, typename V>
-void Node<K, V>::update(const V& value, const Node* obj) const {
-    this->value = value;
-    this->next_node = obj;
-}
-
-// Get next node
-template<typename K, typename V>
-const Node<K, V>* Node<K, V>::next() const {
-    return next_node;
-}
-
-// Get key value pair
-template<typename K, typename V>
-const std::pair<K, V> Node<K, V>::get() const {
-    return static_cast<pair<K, V>>({key, value});
-}
-
-
-// Hashmap Constructor
-template<typename K, typename V>
-Hashmap<K, V>::Hashmap(const size_t size) 
-    : buckets(size)
-    , size(0)
-{
-    container = new Node*[buckets];
-}
-
-// Hashmap Destructor
-template<typename K, typename V>
-Hashmap<K, V>::~Hashmap() {
-    for(size_t idx = 0; idx < buckets; idx++) {
-        delete container[idx];
-    }
-
-    delete[] container;
+HashMap<K, V>::~HashMap() {
+    clear();
 }
 
 // Copy Constructor
 template<typename K, typename V>
-Hashmap<K, V>::Hashmap(const Hashmap<K, V>& obj)
-    : size(obj.size)
-    , buckets(obj.buckets)
-{
-    container = new Node<K, V>*[buckets];
+HashMap<K, V>::HashMap(const HashMap<K, V>& obj) {
+    // Deep Copy
+    max_size = obj.max_size;
+    map_size = obj.map_size;
 
-    for(size_t idx = 0; idx < buckets; idx++) {
-        if(obj.container[idx] != nullptr) {
-            container[idx] = new Node<K, V>(*obj.container[idx]);
-        } else {
-            container[idx] = nullptr;
+    buckets = new HashNode*[max_size];
+    for(size_t idx = 0; idx < max_size; idx++) {
+        buckets[idx] = nullptr;
+        
+        HashNode* current = obj.buckets[idx];
+        HashNode* tail = nullptr;
+
+        // Copy the linked list chain
+        while(current != nullptr) {
+            HashNode* new_node = new HashNode(current->key, current->value);
+            if(buckets[idx] == nullptr) {
+                buckets[idx] = new_node;
+                tail = new_node;
+            } else {
+                tail->next = new_node;
+                tail = new_node;
+            }
+            current = current->next;
         }
     }
 }
 
-// Copy Assignment 
+// Copy Assignment
 template<typename K, typename V>
-Hashmap<K, V>& Hashmap<K, V>::operator=(const Hashmap<K, V>& obj) {
-    if(this == &obj) {
-        return *this;
-    }
-
-    for(size_t idx = 0; idx < buckets; idx++) {
-        delete container[idx];
-    }
-
-    delete[] container;
-
-    size = obj.size;
-    buckets = obj.buckets;
-
-    container = new Node<K, V>*[buckets];
-
-    for(size_t idx = 0; idx < buckets; idx++) {
-        if(obj.container[idx] != nullptr) {
-            container[idx] = new Node<K, V>(*obj.container[idx]);
-        } else {
-            container[idx] = nullptr;
-        }
-    }
-
+HashMap<K, V>& HashMap<K, V>::operator=(HashMap<K, V> obj) {
+    std::swap(buckets, obj.buckets);
+    std::swap(max_size, obj.max_size);
+    std::swap(map_size, obj.map_size);
     return *this;
 }
 
 // Move Constructor
 template<typename K, typename V>
-Hashmap<K, V>::Hashmap(Hashmap<K, V>&& obj) noexcept
-    : size(obj.size)
-    , buckets(obj.buckets)
-    , container(obj.container)
-{
-    obj.size = 0;
-    obj.buckets = 0;
-    obj.container = nullptr;
+HashMap<K, V>::HashMap(HashMap<K, V>&& obj) noexcept {
+    // Steal pointers
+    max_size = obj.max_size;
+    map_size = obj.map_size;
+    buckets = obj.buckets;
+
+    obj.max_size = 0;
+    obj.map_size = 0;
+    obj.buckets = nullptr;
 }
 
-// Move Assignment
+// Move Assignment 
 template<typename K, typename V>
-Hashmap<K, V>& Hashmap<K, V>::operator=(Hashmap<K, V>&& obj) noexcept {
-    if(this == &obj) {
-        return *this;
-    }
-
-    for(size_t idx = 0; idx < buckets; idx++) {
-        delete container[idx];
-    }
-
-    delete[] container;
-
-    size = obj.size;
-    buckets = obj.buckets;
-    container = obj.container;
-
-    obj.size = 0;
-    obj.buckets = 0;
-    obj.container = nullptr;
-
+HashMap<K, V>& HashMap<K, V>::operator=(HashMap<K, V>& obj) noexcept {
+    std::swap(buckets, obj.buckets);
+    std::swap(max_size, obj.max_size);
+    std::swap(map_size, obj.map_size);
     return *this;
 }
 
-// Bucket Idx for Key
+// Rehash Operation
 template<typename K, typename V>
-size_t Hashmap<K, V>::bucket_idx(const K& key) {
-    long long hash_value = std::hash<K>{}(key);
-    size_t idx = hash_value % buckets;
-    return idx;
-}
-
-// Increase Size of Map
-template<typename K, typename V>
-void Hashmap<K, V>::increase_size() {
-    size_t new_buckets = 2 * buckets;
-    Node** new_container = new Node*[new_buckets];
-
-    buckets = new_buckets;
-
-    for(size_t idx = 0; idx < buckets / 2; idx++) {
-        std::pair<K, V> data = container[idx]->get();
-        size_t new_idx = bucket_idx(data.first);
-        new_container[new_idx] = move(container[idx]);
+void HashMap<K, V>::rehash() {
+    size_t new_max_size = max_size * 2;
+    HashNode** new_buckets = new HashNode*[new_max_size];
+    
+    for(size_t idx = 0; idx < new_max_size; idx++) {
+        new_buckets[idx] = nullptr;
     }
 
-    delete[] container;
+    // Redistribute existing nodes
+    for(size_t idx = 0; idx < max_size; idx++) {
+        HashNode* current = buckets[idx];
+        while(current != nullptr) {
+            HashNode* next_node = current->next; // Save next pointer
+            
+            // Recalculate new bucket index
+            size_t new_idx = std::hash<K>{}(current->key) % new_max_size;
+            
+            // Insert at the head of the new bucket
+            current->next = new_buckets[new_idx];
+            new_buckets[new_idx] = current;
+            
+            current = next_node;
+        }
+    }
 
-    container = new_container;
-}
-
-// Calculate load factor
-template<typename K, typename V>
-const double Hashmap<K, V>::load_factor() const {
-    return static_cast<double>(size) / buckets;
+    delete[] buckets;
+    buckets = new_buckets;
+    max_size = new_max_size;
 }
 
 // Put Operation
 template<typename K, typename V>
-void Hashmap<K, V>::put(const K& key, const V& value) {
-    if(load_factor() > 0.75) {
-        increase_size();
+void HashMap<K, V>::put(const K& key, const V& value) {
+    if(load_factor() >= max_load_factor) {
+        rehash();
     }
 
-    size_t idx = bucket_idx(key);
+    size_t idx = std::hash<K>{}(key) % max_size;
+    HashNode* current = buckets[idx];
 
-    Node* curr_node = container[idx];
-
-    if(curr_node == nullptr) {
-        container[idx] = new Node<K, V>(key, value, nullptr);
-        size++;
-        return;
-    }
-
-    while(curr_node != nullptr) {
-        std::pair<K, V> data = curr_node->get();
-
-        if(data.first == key) {
-            curr_node->update(value, curr_node->next());
+    // Check if key already exists (Update)
+    while(current != nullptr) {
+        if(current->key == key) {
+            current->value = value;
             return;
         }
-
-        if(curr_node->next() == nullptr) {
-            break;
-        }
-
-        curr_node = const_cast<Node<K, V>*>(curr_node->next());
+        current = current->next;
     }
 
-    Node<K, V>* node = new Node<K, V>(key, value, nullptr);
-    curr_node->update(curr_node->get().second, node);
-    size++;
+    // Key does not exist, insert at head (Collision / New Entry)
+    HashNode* new_node = new HashNode(key, value);
+    new_node->next = buckets[idx];
+    buckets[idx] = new_node;
+    map_size += 1;
 }
 
-// Get operation
+// Get Operation
 template<typename K, typename V>
-bool Hashmap<K, V>::get(const K& key, V& out_value) {
-    size_t idx = bucket_idx(key);
+bool HashMap<K, V>::get(const K& key, V& out_value) const {
+    size_t idx = std::hash<K>{}(key) % max_size;
+    HashNode* current = buckets[idx];
 
-    Node* curr_node = container[idx];
-
-    while(curr_node != nullptr) {
-        std::pair<K, V> data = curr_node->get();
-
-        if(data.first == key) {
-            out_value = data.second;
+    while(current != nullptr) {
+        if(current->key == key) {
+            out_value = current->value;
             return true;
         }
-
-        curr_node = curr_node->next();
+        current = current->next;
     }
 
     return false;
@@ -374,45 +245,39 @@ bool Hashmap<K, V>::get(const K& key, V& out_value) {
 
 // Remove Operation
 template<typename K, typename V>
-bool Hashmap<K, V>::remove(const K& key) {
-    size_t idx = bucket_idx(key);
+bool HashMap<K, V>::remove(const K& key) {
+    size_t idx = std::hash<K>{}(key) % max_size;
+    HashNode* current = buckets[idx];
+    HashNode* prev = nullptr;
 
-    Node<K, V>* curr_node = container[idx];
-    Node<K, V>* prev_node = nullptr;
-
-    while(curr_node != nullptr) {
-        std::pair<K, V> data = curr_node->get();
-
-        if(data.first == key) {
-            if(prev_node == nullptr) {
-                container[idx] = const_cast<Node<K, V>*>(curr_node->next());
+    while(current != nullptr) {
+        if(current->key == key) {
+            if(prev == nullptr) {
+                // Node to delete is the head of the list
+                buckets[idx] = current->next;
             } else {
-                prev_node->update(
-                    prev_node->get().second,
-                    curr_node->next()
-                );
+                // Node to delete is in the middle or end
+                prev->next = current->next;
             }
-
-            curr_node->update(
-                data.second,
-                nullptr
-            );
-
-            delete curr_node;
-            size--;
-
+            delete current;
+            map_size -= 1;
             return true;
         }
-
-        prev_node = curr_node;
-        curr_node = const_cast<Node<K, V>*>(curr_node->next());
+        prev = current;
+        current = current->next;
     }
 
     return false;
 }
 
-// Get size operation
+// Size operation
 template<typename K, typename V>
-const size_t Hashmap<K, V>::size() const {
-    return size;
+size_t HashMap<K, V>::size() const {
+    return map_size;
+}
+
+// Load Factor operation
+template<typename K, typename V>
+double HashMap<K, V>::load_factor() const {
+    return static_cast<double>(map_size) / max_size;
 }
