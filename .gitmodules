@@ -1,0 +1,3 @@
+[submodule "Reasoning_with_LLM/reasoning-from-scratch"]
+	path = Reasoning_with_LLM/reasoning-from-scratch
+	url = https://github.com/rasbt/reasoning-from-scratch.git
