@@ -13,3 +13,6 @@ Tested but skipped in the final implementation because compilation
 introduced significant startup latency on the RTX 4050. KV caching
 was retained because it is the key algorithmic optimization for
 autoregressive generation.
+
+4. Text around answer 3. Not able to use RLVR in this type of response
+Ans: Added a fallback regex to extract the last number from the response.
